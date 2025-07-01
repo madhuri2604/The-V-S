@@ -44,3 +44,4 @@ Thumbs.db
 # === Keys & Credentials ===
 *.pem
 lakshya-key.pem
+venv/
