@@ -1,0 +1,46 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+*.sqlite3
+
+# === Node.js / React ===
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# === Docker ===
+*.tar
+**/.dockerignore
+
+# === Terraform ===
+*.tfstate
+*.tfstate.*
+.terraform/
+.crash/
+terraform.tfvars
+override.tf
+override.tf.json
+*.backup
+*.log
+
+# === Ansible ===
+*.retry
+*.log
+inventory.ini
+
+# === VS Code ===
+.vscode/
+*.code-workspace
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+
+# === GitHub Actions Cache ===
+.github/workflows/.cache/
+
+# === Keys & Credentials ===
+*.pem
+lakshya-key.pem
