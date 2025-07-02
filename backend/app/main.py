@@ -13,6 +13,7 @@ app.include_router(vote.router, tags=["Voting"])
 app.include_router(health.router, tags=["Health"])
 
 # Optional: root route
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Voting System API"}
