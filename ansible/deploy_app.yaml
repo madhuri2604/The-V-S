@@ -1,0 +1,68 @@
+- name: Deploy Voting App on EC2
+  hosts: ec2
+  become: yes
+
+  vars:
+    aws_region: ap-south-1
+    backend_image: 891377317462.dkr.ecr.ap-south-1.amazonaws.com/the-v-s-backend:latest
+    frontend_image: 891377317462.dkr.ecr.ap-south-1.amazonaws.com/the-v-s-frontend:latest
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages (docker, unzip, etc.)
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - unzip
+          - curl
+        state: present
+
+    - name: Install AWS CLI using bundled installer
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -o awscliv2.zip
+        sudo ./aws/install
+      args:
+        chdir: /tmp
+        creates: /usr/local/bin/aws
+
+    - name: Add user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Login to Amazon ECR
+      shell: |
+        aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ backend_image.split('/')[0] }}
+      register: login_output
+
+    - name: Pull backend Docker image
+      shell: docker pull {{ backend_image }}
+
+    - name: Pull frontend Docker image
+      shell: docker pull {{ frontend_image }}
+
+    - name: Create docker-compose.yml
+      copy:
+        dest: /home/ubuntu/docker-compose.yml
+        content: |
+          version: "3"
+          services:
+            backend:
+              image: {{ backend_image }}
+              ports:
+                - "8000:8000"
+            frontend:
+              image: {{ frontend_image }}
+              ports:
+                - "80:80"
+
+    - name: Run docker-compose up
+      shell: docker-compose up -d
+      args:
+        chdir: /home/ubuntu

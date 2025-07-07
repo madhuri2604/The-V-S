@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from app.logger import logger
 
 router = APIRouter()
 
@@ -11,13 +12,16 @@ class VoteRequest(BaseModel):
     choice: str
 
 @router.post("/vote")
-def cast_vote(vote: VoteRequest):
+def cast_vote(vote: VoteRequest):  # fixed here
     if vote.employee_id in votes:
+        logger.warning(f"Duplicate vote attempt by {vote.employee_id}")
         raise HTTPException(status_code=400, detail="Employee has already voted")
     if vote.choice not in results:
-        raise HTTPException(status_code=400, detail="Invalid vote option")
+        logger.error(f"Invalid vote choice '{vote.choice}' by {vote.employee_id}")
+        raise HTTPException(status_code=400, detail="Invalid choice")
     votes[vote.employee_id] = vote.choice
     results[vote.choice] += 1
+    logger.info(f"Vote recorded: {vote.employee_id} -> {vote.choice}")
     return {"message": "Vote recorded successfully"}
 
 @router.get("/results")
