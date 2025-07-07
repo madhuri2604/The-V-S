@@ -116,13 +116,13 @@ resource "aws_security_group" "k8s_sg" {
 }
 
 resource "aws_instance" "k8s_node" {
-  ami                    = "ami-0f58b397bc5c1f2e8" # Ubuntu 22.04 LTS for ap-south-1
-  instance_type          = "t2.micro"
-  key_name               = aws_key_pair.deployer.key_name
-  subnet_id              = aws_subnet.public_a.id
-  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+  ami                         = "ami-0f58b397bc5c1f2e8" # Ubuntu 22.04 LTS for ap-south-1
+  instance_type               = "t2.micro"
+  key_name                    = aws_key_pair.deployer.key_name
+  subnet_id                   = aws_subnet.public_a.id
+  vpc_security_group_ids      = [aws_security_group.k8s_sg.id]
   associate_public_ip_address = true
-
+  iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
   tags = {
     Name = "Lakshya-K8s"
   }
@@ -148,21 +148,72 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_db_instance" "voting_db" {
-  identifier              = "voting-postgres-db"
-  allocated_storage       = 20
-  engine                  = "postgres"
+  identifier        = "voting-postgres-db"
+  allocated_storage = 20
+  engine            = "postgres"
   # engine_version          = "15.3"
-  instance_class          = "db.t3.micro"
-  username                = "lakshya"
-  password                = "LakshyaSecurePass123"
-  db_name                 = "voting"
-  port                    = 5432
-  publicly_accessible     = true
-  skip_final_snapshot     = true
-  db_subnet_group_name    = aws_db_subnet_group.main.name
-  vpc_security_group_ids  = [aws_security_group.k8s_sg.id]
+  instance_class         = "db.t3.micro"
+  username               = "lakshya"
+  password               = "LakshyaSecurePass123"
+  db_name                = "voting"
+  port                   = 5432
+  publicly_accessible    = true
+  skip_final_snapshot    = true
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
 
   tags = {
     Name = "VotingPostgresDB"
+  }
+}
+
+resource "aws_iam_role" "ssm_role" {
+  name = "ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_read_access" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+
+resource "aws_iam_instance_profile" "ssm_profile" {
+  name = "ssm-instance-profile"
+  role = aws_iam_role.ssm_role.name
+}
+
+output "ec2_public_ip" {
+  description = "Public IP of the EC2 instance"
+  value       = aws_instance.k8s_node.public_ip
+}
+
+output "rds_endpoint" {
+  description = "RDS endpoint"
+  value       = aws_db_instance.voting_db.endpoint
+}
+
+resource "aws_cloudwatch_log_group" "voting_app_logs" {
+  name              = "/voting-app/backend"
+  retention_in_days = 7
+
+  tags = {
+    Environment = "dev"
+    Application = "VotingApp"
   }
 }
