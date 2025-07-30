@@ -65,4 +65,3 @@ def readiness_probe():
 @app.get("/live", response_class=PlainTextResponse)
 def liveness_probe():
     return "ALIVE"
-
