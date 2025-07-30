@@ -58,7 +58,10 @@ memory_percent {mem_percent}
 process_id {pid}
 """
 
-@app.get("/ready")
-def readiness_check():
-    # Add logic if needed to check DB or other dependencies
-    return {"status": "ready"}
+@app.get("/ready", response_class=PlainTextResponse)
+def readiness_probe():
+    return "OK"
+
+@app.get("/live", response_class=PlainTextResponse)
+def liveness_probe():
+    return "ALIVE"
