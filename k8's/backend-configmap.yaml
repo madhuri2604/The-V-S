@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DATABASE_URL: "postgresql://lakshya:LakshyaSecurePass123@hostname:5432/dbname"
+  OTHER_CONFIG: "value"
